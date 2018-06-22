@@ -1,0 +1,1769 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     72097,       1761]
+NotebookOptionsPosition[     68631,       1696]
+NotebookOutlinePosition[     68990,       1712]
+CellTagsIndexPosition[     68947,       1709]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Explicit Implied Volatility Using Lagrange Inversion Theorem", "Title",
+ CellChangeTimes->{{3.73867540515104*^9, 3.738675437247931*^9}, 
+   3.73868435558679*^9},ExpressionUUID->"261e7a96-04a4-4062-a5f2-\
+519090c40e1e"],
+
+Cell["\<\
+Author: Yuxuan Xia, Zhenyu Cui
+Date: 2018/02/01\
+\>", "Text",
+ CellChangeTimes->{{3.738675698432967*^9, 
+  3.7386757190875893`*^9}},ExpressionUUID->"ede4cac7-c590-4eb8-86c6-\
+ea2d73fa0bf7"],
+
+Cell[CellGroupData[{
+
+Cell["Introduction", "Chapter",
+ CellChangeTimes->{{3.738675458917243*^9, 
+  3.738675466214931*^9}},ExpressionUUID->"39c7f15b-1427-4f03-abdc-\
+fa54f25cdf24"],
+
+Cell["\<\
+In this project, we develop an exact and explicit (model-independent) Taylor \
+series representation of the Black-Scholes implied volatility in terms of \
+option prices. Based on an extended Faa di Bruno formula under the operator \
+calculus setting, we first derive the Taylor series of the Black-Scholes \
+formula with respect to the volatility around a pre-chosen positive initial \
+value. Then we apply the Lagrange inversion theorem to explicitly invert the \
+Taylor series to obtain the implied volatility formula. We rigorously \
+establish that our formula converge to the true implied volatility as the \
+truncation order increases, and choose the initial value as the \
+model-independent upper bound of the true implied volatility. Numerical \
+examples illustrate the remarkable accuracy of the formula. Our formula \
+distinguishes from previous literature in that it converges to the true exact \
+implied volatility, is a closed-form formula whose coefficients are \
+explicitly determined and do not involve numerical iterations, and is \
+extremely efficient, which makes it suitable for industrial implementation \
+and adoption\
+\>", "Text",
+ CellChangeTimes->{{3.738675656891494*^9, 
+  3.738675685326517*^9}},ExpressionUUID->"c5b6ea1b-7b60-449d-8fbd-\
+6f8456451ff2"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Black-Scholes Formula", "Chapter",
+ CellChangeTimes->{{3.738675749827262*^9, 
+  3.738675775481998*^9}},ExpressionUUID->"e40f73b8-26ee-4c55-9489-\
+11c6f15bdb2e"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"NormalCDF", "[", "d_", "]"}], ":=", 
+   RowBox[{
+    FractionBox["1", "2"], 
+    RowBox[{"(", 
+     RowBox[{"1", "+", 
+      RowBox[{"Erf", "[", 
+       FractionBox["d", 
+        SqrtBox["2"]], "]"}]}], ")"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"LogForward", "[", 
+    RowBox[{"S_", ",", "K_", ",", "T_", ",", "r_"}], "]"}], ":=", " ", 
+   RowBox[{
+    RowBox[{"Log", "[", 
+     FractionBox["S", "K"], "]"}], "+", 
+    RowBox[{"r", "*", "T"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Std", "[", 
+    RowBox[{"\[Sigma]_", ",", "T_"}], "]"}], ":=", " ", 
+   RowBox[{"\[Sigma]", " ", 
+    SqrtBox["T"]}]}], ";", "c"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"D1", "[", 
+    RowBox[{"lo_", ",", "Z_"}], "]"}], ":=", 
+   RowBox[{
+    FractionBox["lo", "Z"], "+", 
+    FractionBox["Z", "2"]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"D2", "[", 
+    RowBox[{"lo_", ",", "Z_"}], "]"}], ":=", 
+   RowBox[{
+    FractionBox["lo", "Z"], "-", 
+    FractionBox["Z", "2"]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"BSCall", "[", 
+    RowBox[{"S_", ",", "lo_", ",", "Z_"}], "]"}], ":=", 
+   RowBox[{"S", " ", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"NormalCDF", "[", 
+       RowBox[{"D1", "[", 
+        RowBox[{"lo", ",", "Z"}], "]"}], "]"}], "-", 
+      RowBox[{
+       RowBox[{"Exp", "[", 
+        RowBox[{"-", "lo"}], "]"}], 
+       RowBox[{"NormalCDF", "[", 
+        RowBox[{"D2", "[", 
+         RowBox[{"lo", ",", "Z"}], "]"}], "]"}]}]}], ")"}]}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"BSCallHandy", "[", 
+     RowBox[{"S_", ",", "K_", ",", "T_", ",", "r_", ",", "\[Sigma]_"}], "]"}],
+     ":=", 
+    RowBox[{
+     RowBox[{"S", " ", 
+      RowBox[{"NormalCDF", "[", 
+       RowBox[{"D1", "[", 
+        RowBox[{
+         RowBox[{"LogForward", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r"}], "]"}], ",", 
+         RowBox[{"Std", "[", 
+          RowBox[{"\[Sigma]", ",", "T"}], "]"}]}], "]"}], "]"}]}], "-", 
+     RowBox[{"K", " ", 
+      RowBox[{"Exp", "[", 
+       RowBox[{
+        RowBox[{"-", "r"}], " ", "T"}], "]"}], 
+      RowBox[{"NormalCDF", "[", 
+       RowBox[{"D2", "[", 
+        RowBox[{
+         RowBox[{"LogForward", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r"}], "]"}], ",", 
+         RowBox[{"Std", "[", 
+          RowBox[{"\[Sigma]", ",", "T"}], "]"}]}], "]"}], "]"}]}]}]}], ";"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"BSPut", "[", 
+    RowBox[{"S_", ",", "lo_", ",", "Z_"}], "]"}], ":=", 
+   RowBox[{"S", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"-", 
+       RowBox[{"NormalCDF", "[", 
+        RowBox[{"-", 
+         RowBox[{"D1", "[", 
+          RowBox[{"lo", ",", "Z"}], "]"}]}], "]"}]}], "+", 
+      RowBox[{
+       RowBox[{"Exp", "[", 
+        RowBox[{"-", "lo"}], "]"}], 
+       RowBox[{"NormalCDF", "[", 
+        RowBox[{"-", 
+         RowBox[{"D2", "[", 
+          RowBox[{"lo", ",", "Z"}], "]"}]}], "]"}]}]}], ")"}]}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"BSPutHandy", "[", 
+    RowBox[{"S_", ",", "K_", ",", "T_", ",", "r_", ",", "\[Sigma]_"}], "]"}], 
+   ":=", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"-", "S"}], " ", 
+     RowBox[{"NormalCDF", "[", 
+      RowBox[{"-", 
+       RowBox[{"D1", "[", 
+        RowBox[{
+         RowBox[{"LogForward", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r"}], "]"}], ",", 
+         RowBox[{"Std", "[", 
+          RowBox[{"\[Sigma]", ",", "T"}], "]"}]}], "]"}]}], "]"}]}], "+", 
+    RowBox[{"K", " ", 
+     RowBox[{"Exp", "[", 
+      RowBox[{
+       RowBox[{"-", "r"}], " ", "T"}], "]"}], 
+     RowBox[{"NormalCDF", "[", 
+      RowBox[{"-", 
+       RowBox[{"D2", "[", 
+        RowBox[{
+         RowBox[{"LogForward", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r"}], "]"}], ",", 
+         RowBox[{"Std", "[", 
+          RowBox[{"\[Sigma]", ",", "T"}], "]"}]}], "]"}]}], "]"}]}]}]}], 
+  ";"}]}], "Input",
+ CellChangeTimes->{{3.7197100497204056`*^9, 3.719710079284034*^9}, {
+   3.7197108175441027`*^9, 3.71971100892025*^9}, {3.719711077091835*^9, 
+   3.7197111363363237`*^9}, {3.7197119266876755`*^9, 
+   3.7197119319426513`*^9}, {3.7198760921104712`*^9, 
+   3.7198761248616056`*^9}, {3.7233321266628094`*^9, 3.723332205905687*^9}, 
+   3.738678108108848*^9},ExpressionUUID->"4691304b-0b83-42c7-82d6-\
+84b871a8856b"],
+
+Cell[BoxData["c"], "Output",
+ CellChangeTimes->{
+  3.738684363967536*^9},ExpressionUUID->"5138993d-a18a-4385-ad3b-\
+2a5b224a8d03"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Derivatives", "Chapter",
+ CellChangeTimes->{{3.738675846824863*^9, 
+  3.7386758537833757`*^9}},ExpressionUUID->"28e0ca4a-496b-4ffd-b0eb-\
+82ac5b026091"],
+
+Cell[TextData[{
+ "We firstly calculated arbitrary Greeks with respect to stock price and \
+volatility ",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{
+    SuperscriptBox[
+     SubscriptBox["\[PartialD]", "x"], "n"], "Price"}], TraditionalForm]],
+  FormatType->"TraditionalForm",ExpressionUUID->
+  "e70deeb4-7b29-4fc7-82c0-ddf3e9ab9693"],
+ ", ",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{
+    SuperscriptBox[
+     SubscriptBox["\[PartialD]", "Vol"], "n"], "Price"}], TraditionalForm]],
+  FormatType->"TraditionalForm",ExpressionUUID->
+  "a10cae73-83f9-4aa4-aec3-cfac0ba6e7a7"],
+ ",  as the following, denoted as DxP, DvP. The technique involved is our \
+generalized Faa di Bruno\[CloseCurlyQuote]s formula with the perspectives of \
+operator calculus.\n\nThen, using Lagrange Inversion Theorem to calculate the \
+inversion ",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{
+    SuperscriptBox[
+     SubscriptBox["\[PartialD]", "Price"], "n"], "Vol"}], TraditionalForm]],
+  FormatType->"TraditionalForm",ExpressionUUID->
+  "8b73077d-8600-4f10-a814-145f55c44dca"],
+ " and expand implied volatility with corresponding to option price.cc"
+}], "Text",
+ CellChangeTimes->{{3.7386758704263906`*^9, 3.7386759669387703`*^9}, {
+  3.738676013924637*^9, 3.7386761324577017`*^9}, {3.738676193803303*^9, 
+  3.738676245777519*^9}, {3.7386766039698*^9, 3.7386766368364153`*^9}, {
+  3.738676766793408*^9, 3.738676776883505*^9}, {3.73867688137768*^9, 
+  3.738676931261096*^9}, {3.738677084194377*^9, 3.73867708752112*^9}, {
+  3.738677208216838*^9, 3.738677216946034*^9}, {3.73867741932448*^9, 
+  3.738677591017178*^9}, {3.738677632226841*^9, 3.7386776959817*^9}, {
+  3.738677850224079*^9, 3.738677970720777*^9}, {3.738678075481203*^9, 
+  3.738678153987915*^9}, {3.738678229790822*^9, 3.738678232168766*^9}, {
+  3.738679461831522*^9, 3.738679567953512*^9}, {3.738679602917251*^9, 
+  3.73867961260434*^9}, {3.7386796784231997`*^9, 3.738679739354694*^9}, {
+  3.738684210485972*^9, 
+  3.738684217866816*^9}},ExpressionUUID->"9c8768dc-2c54-4c11-8184-\
+9c18c1549680"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"DxP", "[", 
+    RowBox[{
+    "x_", ",", "K_", ",", "T_", ",", "r_", ",", "\[Sigma]_", ",", "c_", ",", 
+     "n_"}], "]"}], ":=", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"d1", ",", "g"}], "}"}], ",", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"d1", "=", 
+       FractionBox[
+        RowBox[{"x", "+", 
+         RowBox[{"r", " ", "T"}], " ", "-", " ", 
+         RowBox[{"Log", "[", "K", "]"}], "+", " ", 
+         FractionBox[
+          RowBox[{
+           SuperscriptBox["\[Sigma]", "2"], "T"}], "2"]}], 
+        RowBox[{"\[Sigma]", " ", 
+         SqrtBox["T"]}]]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"g", "=", 
+       RowBox[{"c", "*", 
+        FractionBox["d1", 
+         SqrtBox["2"]]}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"c", "*", 
+        RowBox[{
+         RowBox[{"Exp", "[", "x", "]"}], "/", "2"}], 
+        RowBox[{"(", 
+         RowBox[{"1", "+", 
+          RowBox[{"Erf", "[", "g", "]"}]}], ")"}]}], " ", "+", " ", 
+       RowBox[{"c", "*", 
+        RowBox[{"Exp", "[", "x", "]"}], 
+        FractionBox["1", "2"], 
+        RowBox[{
+         UnderoverscriptBox["\[Sum]", 
+          RowBox[{"j", "=", "1"}], 
+          RowBox[{"n", "-", "1"}]], 
+         RowBox[{
+          RowBox[{"Binomial", "[", 
+           RowBox[{
+            RowBox[{"n", "-", "1"}], ",", "j"}], "]"}], 
+          SuperscriptBox[
+           RowBox[{"(", 
+            RowBox[{"c", "*", 
+             SqrtBox["2"], "\[Sigma]", 
+             SqrtBox["T"]}], ")"}], 
+           RowBox[{"-", "j"}]], " ", 
+          RowBox[{"(", 
+           RowBox[{
+            SuperscriptBox[
+             RowBox[{"(", 
+              RowBox[{"-", "1"}], ")"}], 
+             RowBox[{"j", "-", "1"}]], " ", 
+            FractionBox["2", 
+             SqrtBox["Pi"]], " ", 
+            RowBox[{"HermiteH", "[", 
+             RowBox[{
+              RowBox[{"j", "-", "1"}], ",", "g"}], "]"}], " ", 
+            RowBox[{"Exp", "[", 
+             RowBox[{"-", " ", 
+              SuperscriptBox["g", "2"]}], "]"}]}], ")"}]}]}]}]}]}]}], 
+    "\[IndentingNewLine]", "]"}]}], ";"}]], "Input",
+ CellChangeTimes->{{3.7233323509308577`*^9, 
+  3.7233323673184695`*^9}},ExpressionUUID->"fff3041f-78aa-4e76-9c4b-\
+a221dfc6a74e"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"DvP", "[", 
+    RowBox[{
+    "x_", ",", "K_", ",", "T_", ",", "r_", ",", "\[Sigma]_", ",", "c_", ",", 
+     "n_"}], "]"}], ":=", 
+   RowBox[{
+    UnderoverscriptBox["\[Sum]", 
+     RowBox[{"k", "=", "1"}], "n"], 
+    RowBox[{
+     FractionBox[
+      RowBox[{"n", "!"}], 
+      RowBox[{
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"2", "k"}], "-", "n"}], ")"}], "!"}], " ", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"n", "-", "k"}], ")"}], "!"}]}]], " ", 
+     FractionBox[
+      RowBox[{
+       SuperscriptBox["T", "k"], " ", 
+       SuperscriptBox["\[Sigma]", 
+        RowBox[{
+         RowBox[{"2", "k"}], "-", "n"}]]}], 
+      SuperscriptBox["2", 
+       RowBox[{"n", "-", "k"}]]], 
+     RowBox[{
+      UnderoverscriptBox["\[Sum]", 
+       RowBox[{"j", "=", "0"}], "k"], 
+      RowBox[{
+       RowBox[{"Binomial", "[", 
+        RowBox[{"k", ",", "j"}], "]"}], " ", 
+       SuperscriptBox[
+        RowBox[{"(", 
+         RowBox[{"-", "1"}], ")"}], 
+        RowBox[{"k", "-", "j"}]], 
+       RowBox[{"DxP", "[", 
+        RowBox[{
+        "x", ",", "K", ",", "T", ",", "r", ",", "\[Sigma]", ",", "c", ",", 
+         RowBox[{"k", "+", "j"}]}], "]"}]}]}]}]}]}], ";"}]], "Input",Expressio\
+nUUID->"e8f8f561-73a6-47cf-a5d9-b968431be503"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"DpV", "[", 
+    RowBox[{
+    "S_", ",", "K_", ",", "T_", ",", "r_", ",", "c_", ",", "Price_", ",", 
+     "fixVol_", ",", "n_"}], "]"}], ":=", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+      "x", ",", "z", ",", "f", ",", "fHat", ",", "fHatArray", ",", "g"}], 
+      "}"}], ",", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"x", "=", 
+       RowBox[{"Log", "[", "S", "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"z", "=", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{"c", "\[Equal]", "1"}], ",", 
+         RowBox[{"Price", " ", "-", " ", 
+          RowBox[{"BSCallHandy", "[", 
+           RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "fixVol"}], 
+           "]"}]}], ",", 
+         RowBox[{"Price", "-", 
+          RowBox[{"BSPutHandy", "[", 
+           RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "fixVol"}], 
+           "]"}]}]}], "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"f", ":=", 
+       RowBox[{"k", "\[Function]", 
+        RowBox[{"DvP", "[", 
+         RowBox[{
+         "x", ",", "K", ",", "T", ",", "r", ",", "fixVol", ",", "c", ",", 
+          "k"}], "]"}]}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"fHat", ":=", 
+       RowBox[{"k", "\[Function]", 
+        FractionBox[
+         RowBox[{"f", "[", 
+          RowBox[{"k", "+", "1"}], "]"}], 
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{"k", "+", "1"}], ")"}], " ", 
+          RowBox[{"f", "[", "1", "]"}]}]]}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"fHatArray", ":=", 
+       RowBox[{"k", "\[Function]", 
+        RowBox[{"Table", "[", 
+         RowBox[{
+          RowBox[{"fHat", "[", "j", "]"}], ",", 
+          RowBox[{"{", 
+           RowBox[{"j", ",", "1", ",", "k"}], "}"}]}], "]"}]}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"g", " ", "=", " ", 
+       RowBox[{"Which", "[", "\[IndentingNewLine]", 
+        RowBox[{
+         RowBox[{"n", "\[Equal]", "0"}], ",", "0", ",", "\[IndentingNewLine]", 
+         RowBox[{"n", "\[Equal]", "1"}], ",", 
+         FractionBox["1", 
+          RowBox[{"f", "[", "1", "]"}]], ",", "\[IndentingNewLine]", 
+         RowBox[{"n", "\[GreaterEqual]", "2"}], ",", " ", 
+         RowBox[{
+          FractionBox["1", 
+           SuperscriptBox[
+            RowBox[{"f", "[", "1", "]"}], "n"]], 
+          RowBox[{
+           UnderoverscriptBox["\[Sum]", 
+            RowBox[{"k", "=", "1"}], 
+            RowBox[{"n", "-", "1"}]], 
+           RowBox[{
+            SuperscriptBox[
+             RowBox[{"(", 
+              RowBox[{"-", "1"}], ")"}], "k"], " ", 
+            FractionBox[
+             RowBox[{
+              RowBox[{"(", 
+               RowBox[{"n", "+", "k", "-", "1"}], ")"}], "!"}], 
+             RowBox[{
+              RowBox[{"(", 
+               RowBox[{"n", "-", "1"}], ")"}], "!"}]], " ", 
+            RowBox[{"BellY", "[", 
+             RowBox[{
+              RowBox[{"n", "-", "1"}], ",", "k", ",", 
+              RowBox[{"fHatArray", "[", 
+               RowBox[{"n", "-", "k"}], "]"}]}], "]"}]}]}]}]}], "]"}]}], ";", 
+      "\[IndentingNewLine]", "g"}]}], "\[IndentingNewLine]", "]"}]}], 
+  ";"}]], "Input",ExpressionUUID->"e9d33fa3-2a07-4a19-888f-538fc7117b76"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Implied Volatility Formula", "Chapter",
+ CellChangeTimes->{{3.738692822984923*^9, 
+  3.738692829485024*^9}},ExpressionUUID->"2633c0e4-e1e0-471e-927d-\
+28793e5bd687"],
+
+Cell["\<\
+Since we have the derivatives of volatility with respect to option price, we \
+can represent the implied volatility as an infinite Taylor series. Here, we \
+approximate the implied volatility by using a finite number of its Taylor \
+series and make a small operation panel as the following.\
+\>", "Text",
+ CellChangeTimes->{{3.738692839596589*^9, 3.7386928443683357`*^9}, {
+  3.738692929435604*^9, 3.738692956032218*^9}, {3.7386931632048483`*^9, 
+  3.738693212658761*^9}, {3.7386933970471373`*^9, 3.738693417688857*^9}, {
+  3.738693548674509*^9, 3.738693565787274*^9}, {3.73869361392089*^9, 
+  3.73869362824718*^9}, {3.738693727591524*^9, 3.738693838521978*^9}, {
+  3.738693904222694*^9, 
+  3.7386939141901217`*^9}},ExpressionUUID->"554cec86-bfdc-48d0-9d3d-\
+c973e8586f38"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"VolFromPrice", "[", 
+    RowBox[{
+    "S_", ",", "K_", ",", "T_", ",", "r_", ",", "price_", ",", "c_", ",", 
+     "fixVol_", ",", "n_"}], "]"}], ":=", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"x", "=", 
+        RowBox[{"Log", "[", "S", "]"}]}], ",", 
+       RowBox[{"truePrice", "=", "price"}], ",", "fixPrice", ",", "dpVArray", 
+       ",", "vol", ",", "gk"}], "}"}], ",", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"fixPrice", " ", "=", " ", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{"c", "\[Equal]", "1"}], ",", 
+         RowBox[{"BSCallHandy", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "fixVol"}], "]"}], 
+         ",", 
+         RowBox[{"BSPutHandy", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "fixVol"}], "]"}]}],
+         "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"dpVArray", " ", "=", " ", 
+       RowBox[{"Table", "[", 
+        RowBox[{
+         RowBox[{"DpV", "[", 
+          RowBox[{
+          "S", ",", "K", ",", "T", ",", "r", ",", "c", ",", "truePrice", ",", 
+           "fixVol", ",", "j"}], "]"}], ",", 
+         RowBox[{"{", 
+          RowBox[{"j", ",", "1", ",", "n"}], "}"}]}], "]"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"gk", "=", 
+       RowBox[{"k", "\[Function]", 
+        RowBox[{"DpV", "[", 
+         RowBox[{
+         "S", ",", "K", ",", "T", ",", "r", ",", "c", ",", "truePrice", ",", 
+          "fixVol", ",", "k"}], "]"}]}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"vol", " ", "=", 
+       RowBox[{"fixVol", "+", " ", 
+        RowBox[{
+         UnderoverscriptBox["\[Sum]", 
+          RowBox[{"k", "=", "1"}], "n"], 
+         RowBox[{
+          FractionBox[
+           RowBox[{"gk", "[", "k", "]"}], 
+           RowBox[{"k", "!"}]], " ", 
+          SuperscriptBox[
+           RowBox[{"(", 
+            RowBox[{"truePrice", "-", "fixPrice"}], ")"}], "k"]}]}]}]}]}]}], 
+    "]"}]}], ";"}]], "Input",
+ CellChangeTimes->{{3.719928959847687*^9, 3.719929128441103*^9}, {
+  3.719929187567647*^9, 3.7199291895497856`*^9}, {3.7386779957968893`*^9, 
+  3.7386779976889153`*^9}},ExpressionUUID->"8680bf5f-2865-41ed-a3ba-\
+914c3fa05f07"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Manipulate", "[", "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+      "targetCallPrice", ",", "estimatedCallPrice", ",", "estimatedIV", ",", 
+       "newtonRoot", ",", "c", ",", "k", ",", "U"}], "}"}], ",", 
+     "\[IndentingNewLine]", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"targetCallPrice", "=", 
+       RowBox[{"BSCallHandy", "[", 
+        RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "\[Sigma]"}], "]"}]}],
+       ";", "\[IndentingNewLine]", 
+      RowBox[{"c", " ", "=", " ", 
+       FractionBox["targetCallPrice", "S"]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"k", " ", "=", " ", 
+       RowBox[{"Log", "[", 
+        FractionBox["K", 
+         RowBox[{"S", " ", 
+          RowBox[{"Exp", "[", 
+           RowBox[{"r", " ", "T"}], "]"}]}]], "]"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"U", " ", "=", " ", 
+       RowBox[{
+        RowBox[{"-", "2"}], " ", 
+        FractionBox[
+         RowBox[{"InverseCDF", "[", 
+          RowBox[{
+           RowBox[{"NormalDistribution", "[", 
+            RowBox[{"0", ",", "1"}], "]"}], ",", 
+           FractionBox[
+            RowBox[{"1", "-", "c"}], 
+            RowBox[{"1", "+", 
+             SuperscriptBox["\[ExponentialE]", "k"]}]]}], "]"}], 
+         SqrtBox["T"]]}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"estimatedIV", "=", 
+       RowBox[{"VolFromPrice", "[", 
+        RowBox[{
+        "S", ",", "K", ",", "T", ",", "r", ",", "targetCallPrice", ",", "1", 
+         ",", "a", ",", "order"}], "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"(*", 
+       RowBox[{
+        RowBox[{"newtonRoot", " ", "=", " ", 
+         RowBox[{"Timing", "[", 
+          RowBox[{"FindRoot", "[", 
+           RowBox[{
+            RowBox[{
+             RowBox[{"BSCallHandy", "[", 
+              RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "xx"}], "]"}], 
+             "\[Equal]", "targetCallPrice"}], ",", 
+            RowBox[{"{", 
+             RowBox[{"xx", ",", "a"}], "}"}]}], "]"}], "]"}]}], ";", 
+        "\[IndentingNewLine]", 
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{"{", "targetCallPrice", "}"}], ",", 
+          RowBox[{"{", 
+           RowBox[{
+           "\[Sigma]", ",", "estimatedIV", ",", "U", ",", "newtonRoot"}], 
+           "}"}]}], "}"}], ";"}], "*)"}], "\[IndentingNewLine]", 
+      "\[IndentingNewLine]", 
+      RowBox[{"StringForm", "[", 
+       RowBox[{
+       "\"\<target Call Price: ``\\nsigma: ``\\nimplied volatility from our \
+formula: ``\>\"", ",", "targetCallPrice", ",", " ", "\[Sigma]", ",", " ", 
+        "estimatedIV"}], "]"}]}]}], "\[IndentingNewLine]", "]"}], ",", 
+   "\[IndentingNewLine]", 
+   "\"\<underlying, \!\(\*SubscriptBox[\(S\), \(0\)]\)\>\"", ",", 
+   "\[IndentingNewLine]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"S", ",", "100.", ",", "\"\<\>\""}], "}"}], ",", "0", ",", 
+     "150", ",", "1", ",", 
+     RowBox[{"Appearance", "\[Rule]", "\"\<Labeled\>\""}], ",", " ", 
+     RowBox[{"ImageSize", "\[Rule]", " ", "Tiny"}]}], "}"}], ",", 
+   "\[IndentingNewLine]", "\"\<\>\"", ",", "\[IndentingNewLine]", 
+   "\"\<strike, K\>\"", ",", "\[IndentingNewLine]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"K", ",", "100", ",", "\"\<\>\""}], "}"}], ",", "0", ",", "150",
+      ",", "1", ",", 
+     RowBox[{"Appearance", "\[Rule]", "\"\<Labeled\>\""}], ",", " ", 
+     RowBox[{"ImageSize", "\[Rule]", " ", "Tiny"}]}], "}"}], ",", 
+   "\[IndentingNewLine]", "\"\<\>\"", ",", "\[IndentingNewLine]", 
+   "\"\<volatility, \[Sigma]\>\"", ",", "\[IndentingNewLine]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"\[Sigma]", ",", "0.3", ",", "\"\<\>\""}], "}"}], ",", "0.01", 
+     ",", "1", ",", "0.01", ",", 
+     RowBox[{"Appearance", "\[Rule]", "\"\<Labeled\>\""}], ",", " ", 
+     RowBox[{"ImageSize", "\[Rule]", " ", "Tiny"}]}], "}"}], ",", 
+   "\[IndentingNewLine]", "\"\<\>\"", ",", "\[IndentingNewLine]", 
+   "\"\<risk-free rate, r\>\"", ",", "\[IndentingNewLine]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"r", ",", "0.05", ",", "\"\<\>\""}], "}"}], ",", "0.0", ",", 
+     "0.25", ",", "0.01", ",", 
+     RowBox[{"Appearance", "\[Rule]", "\"\<Labeled\>\""}], ",", " ", 
+     RowBox[{"ImageSize", "\[Rule]", " ", "Tiny"}]}], "}"}], ",", 
+   "\[IndentingNewLine]", "\"\<\>\"", ",", "\[IndentingNewLine]", 
+   "\"\<years to maturity, T\>\"", ",", "\[IndentingNewLine]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"T", ",", "1", ",", "\"\<\>\""}], "}"}], ",", "0.1", ",", "3", 
+     ",", "0.25", ",", 
+     RowBox[{"Appearance", "\[Rule]", "\"\<Labeled\>\""}], ",", " ", 
+     RowBox[{"ImageSize", "\[Rule]", " ", "Tiny"}]}], "}"}], ",", 
+   "\[IndentingNewLine]", "\"\<\>\"", ",", "\[IndentingNewLine]", 
+   "\"\<truncated order, order\>\"", ",", "\[IndentingNewLine]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"order", ",", "5", ",", "\"\<\>\""}], "}"}], ",", "0", ",", 
+     "20", ",", "5", ",", 
+     RowBox[{"Appearance", "\[Rule]", "\"\<Labeled\>\""}], ",", " ", 
+     RowBox[{"ImageSize", "\[Rule]", " ", "Tiny"}]}], "}"}], ",", 
+   "\[IndentingNewLine]", "\"\<\>\"", ",", "\[IndentingNewLine]", 
+   "\"\<fixed volatility, a\>\"", ",", "\[IndentingNewLine]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"a", ",", "0.3", ",", "\"\<\>\""}], "}"}], ",", "0.05", ",", 
+     "1", ",", "0.1", ",", 
+     RowBox[{"Appearance", "\[Rule]", "\"\<Labeled\>\""}], ",", " ", 
+     RowBox[{"ImageSize", "\[Rule]", " ", "Tiny"}]}], "}"}], ",", 
+   "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{"ControlPlacement", "\[Rule]", "Left"}], ",", 
+   RowBox[{"SaveDefinitions", "\[Rule]", "True"}]}], "\[IndentingNewLine]", 
+  "]"}]], "Input",
+ CellChangeTimes->{{3.7199304826294923`*^9, 3.719930490850422*^9}, {
+  3.719930610831024*^9, 3.7199306161103363`*^9}, {3.7200407226895337`*^9, 
+  3.720040724196332*^9}, {3.7204793163646765`*^9, 3.7204793465140095`*^9}, {
+  3.7228107198331447`*^9, 3.7228107606051006`*^9}, {3.7228107948387904`*^9, 
+  3.7228108948172984`*^9}, {3.722811026128028*^9, 3.7228111636815643`*^9}, {
+  3.722811196318845*^9, 3.7228112839300623`*^9}, {3.722811794847556*^9, 
+  3.722811798959453*^9}, {3.738678005537106*^9, 3.738678008863798*^9}, {
+  3.738694161608571*^9, 3.738694263296172*^9}, {3.7386943646884212`*^9, 
+  3.738694445763576*^9}, {3.7386944827027283`*^9, 
+  3.738694526371711*^9}},ExpressionUUID->"5e2d6bc1-fc3d-4594-8b16-\
+2a2a7ede6d7a"],
+
+Cell[BoxData[
+ TagBox[
+  StyleBox[
+   DynamicModuleBox[{$CellContext`a$$ = 0.3, K$$ = 100, $CellContext`order$$ =
+     5, $CellContext`r$$ = 0.05, $CellContext`S$$ = 100., $CellContext`T$$ = 
+    1, $CellContext`\[Sigma]$$ = 0.3, Typeset`show$$ = True, 
+    Typeset`bookmarkList$$ = {}, Typeset`bookmarkMode$$ = "Menu", 
+    Typeset`animator$$, Typeset`animvar$$ = 1, Typeset`name$$ = 
+    "\"untitled\"", Typeset`specs$$ = {{
+      Hold["underlying, \!\(\*SubscriptBox[\(S\), \(0\)]\)"], 
+      Manipulate`Dump`ThisIsNotAControl}, {{
+       Hold[$CellContext`S$$], 100., ""}, 0, 150, 1}, {
+      Hold[""], Manipulate`Dump`ThisIsNotAControl}, {
+      Hold["strike, K"], Manipulate`Dump`ThisIsNotAControl}, {{
+       Hold[K$$], 100, ""}, 0, 150, 1}, {
+      Hold[""], Manipulate`Dump`ThisIsNotAControl}, {
+      Hold["volatility, \[Sigma]"], Manipulate`Dump`ThisIsNotAControl}, {{
+       Hold[$CellContext`\[Sigma]$$], 0.3, ""}, 0.01, 1, 0.01}, {
+      Hold[""], Manipulate`Dump`ThisIsNotAControl}, {
+      Hold["risk-free rate, r"], Manipulate`Dump`ThisIsNotAControl}, {{
+       Hold[$CellContext`r$$], 0.05, ""}, 0., 0.25, 0.01}, {
+      Hold[""], Manipulate`Dump`ThisIsNotAControl}, {
+      Hold["years to maturity, T"], Manipulate`Dump`ThisIsNotAControl}, {{
+       Hold[$CellContext`T$$], 1, ""}, 0.1, 3, 0.25}, {
+      Hold[""], Manipulate`Dump`ThisIsNotAControl}, {
+      Hold["truncated order, order"], Manipulate`Dump`ThisIsNotAControl}, {{
+       Hold[$CellContext`order$$], 5, ""}, 0, 20, 5}, {
+      Hold[""], Manipulate`Dump`ThisIsNotAControl}, {
+      Hold["fixed volatility, a"], Manipulate`Dump`ThisIsNotAControl}, {{
+       Hold[$CellContext`a$$], 0.3, ""}, 0.05, 1, 0.1}}, Typeset`size$$ = {
+    321., {45.54893493652344, 12.791915893554688`}}, Typeset`update$$ = 0, 
+    Typeset`initDone$$, Typeset`skipInitDone$$ = 
+    False, $CellContext`S$10908$$ = 0, K$10909$$ = 
+    0, $CellContext`\[Sigma]$10910$$ = 0, $CellContext`r$10911$$ = 
+    0, $CellContext`T$10912$$ = 0, $CellContext`order$10913$$ = 
+    0, $CellContext`a$10914$$ = 0}, 
+    DynamicBox[Manipulate`ManipulateBoxes[
+     1, StandardForm, 
+      "Variables" :> {$CellContext`a$$ = 0.3, K$$ = 100, $CellContext`order$$ = 
+        5, $CellContext`r$$ = 0.05, $CellContext`S$$ = 100., $CellContext`T$$ = 
+        1, $CellContext`\[Sigma]$$ = 0.3}, "ControllerVariables" :> {
+        Hold[$CellContext`S$$, $CellContext`S$10908$$, 0], 
+        Hold[K$$, K$10909$$, 0], 
+        Hold[$CellContext`\[Sigma]$$, $CellContext`\[Sigma]$10910$$, 0], 
+        Hold[$CellContext`r$$, $CellContext`r$10911$$, 0], 
+        Hold[$CellContext`T$$, $CellContext`T$10912$$, 0], 
+        Hold[$CellContext`order$$, $CellContext`order$10913$$, 0], 
+        Hold[$CellContext`a$$, $CellContext`a$10914$$, 0]}, 
+      "OtherVariables" :> {
+       Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
+        Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
+        Typeset`specs$$, Typeset`size$$, Typeset`update$$, Typeset`initDone$$,
+         Typeset`skipInitDone$$}, "Body" :> 
+      Module[{$CellContext`targetCallPrice$, \
+$CellContext`estimatedCallPrice$, $CellContext`estimatedIV$, \
+$CellContext`newtonRoot$, $CellContext`c$, $CellContext`k$, $CellContext`U$}, \
+$CellContext`targetCallPrice$ = $CellContext`BSCallHandy[$CellContext`S$$, 
+           K$$, $CellContext`T$$, $CellContext`r$$, $CellContext`\[Sigma]$$]; \
+$CellContext`c$ = $CellContext`targetCallPrice$/$CellContext`S$$; \
+$CellContext`k$ = 
+         Log[K$$/($CellContext`S$$ 
+           Exp[$CellContext`r$$ $CellContext`T$$])]; $CellContext`U$ = (-2) (
+           InverseCDF[
+             NormalDistribution[0, 1], (1 - $CellContext`c$)/(1 + 
+             E^$CellContext`k$)]/
+           Sqrt[$CellContext`T$$]); $CellContext`estimatedIV$ = \
+$CellContext`VolFromPrice[$CellContext`S$$, 
+           K$$, $CellContext`T$$, $CellContext`r$$, \
+$CellContext`targetCallPrice$, 1, $CellContext`a$$, $CellContext`order$$]; 
+        StringForm[
+         "target Call Price: ``\nsigma: ``\nimplied volatility from our \
+formula: ``", $CellContext`targetCallPrice$, $CellContext`\[Sigma]$$, \
+$CellContext`estimatedIV$]], 
+      "Specifications" :> {
+       "underlying, \!\(\*SubscriptBox[\(S\), \(0\)]\)", {{$CellContext`S$$, 
+          100., ""}, 0, 150, 1, Appearance -> "Labeled", ImageSize -> Tiny}, 
+        "", "strike, K", {{K$$, 100, ""}, 0, 150, 1, Appearance -> "Labeled", 
+         ImageSize -> Tiny}, "", 
+        "volatility, \[Sigma]", {{$CellContext`\[Sigma]$$, 0.3, ""}, 0.01, 1, 
+         0.01, Appearance -> "Labeled", ImageSize -> Tiny}, "", 
+        "risk-free rate, r", {{$CellContext`r$$, 0.05, ""}, 0., 0.25, 0.01, 
+         Appearance -> "Labeled", ImageSize -> Tiny}, "", 
+        "years to maturity, T", {{$CellContext`T$$, 1, ""}, 0.1, 3, 0.25, 
+         Appearance -> "Labeled", ImageSize -> Tiny}, "", 
+        "truncated order, order", {{$CellContext`order$$, 5, ""}, 0, 20, 5, 
+         Appearance -> "Labeled", ImageSize -> Tiny}, "", 
+        "fixed volatility, a", {{$CellContext`a$$, 0.3, ""}, 0.05, 1, 0.1, 
+         Appearance -> "Labeled", ImageSize -> Tiny}}, 
+      "Options" :> {ControlPlacement -> Left}, "DefaultOptions" :> {}],
+     ImageSizeCache->{493., {168., 173.}},
+     SingleEvaluation->True],
+    Deinitialization:>None,
+    DynamicModuleValues:>{},
+    Initialization:>({$CellContext`BSCallHandy[
+         Pattern[$CellContext`S, 
+          Blank[]], 
+         Pattern[K, 
+          Blank[]], 
+         Pattern[$CellContext`T, 
+          Blank[]], 
+         Pattern[$CellContext`r, 
+          Blank[]], 
+         Pattern[$CellContext`\[Sigma], 
+          Blank[]]] := $CellContext`S $CellContext`NormalCDF[
+           $CellContext`D1[
+            $CellContext`LogForward[$CellContext`S, 
+             K, $CellContext`T, $CellContext`r], 
+            $CellContext`Std[$CellContext`\[Sigma], $CellContext`T]]] - K 
+        Exp[(-$CellContext`r) $CellContext`T] $CellContext`NormalCDF[
+          $CellContext`D2[
+           $CellContext`LogForward[$CellContext`S, 
+            K, $CellContext`T, $CellContext`r], 
+           $CellContext`Std[$CellContext`\[Sigma], $CellContext`T]]], \
+$CellContext`NormalCDF[
+         Pattern[$CellContext`d, 
+          Blank[]]] := (1/2) (1 + 
+         Erf[$CellContext`d/Sqrt[2]]), $CellContext`D1[
+         Pattern[$CellContext`lo, 
+          Blank[]], 
+         Pattern[$CellContext`Z, 
+          Blank[]]] := $CellContext`lo/$CellContext`Z + $CellContext`Z/
+         2, $CellContext`Z[
+         Pattern[$CellContext`\[Sigma], 
+          Blank[]], 
+         Pattern[$CellContext`T, 
+          Blank[]]] := $CellContext`\[Sigma] 
+        Sqrt[$CellContext`T], $CellContext`LogForward[
+         Pattern[$CellContext`S, 
+          Blank[]], 
+         Pattern[K, 
+          Blank[]], 
+         Pattern[$CellContext`T, 
+          Blank[]], 
+         Pattern[$CellContext`r, 
+          Blank[]]] := 
+       Log[$CellContext`S/K] + $CellContext`r $CellContext`T, $CellContext`Std[
+         Pattern[$CellContext`\[Sigma], 
+          Blank[]], 
+         Pattern[$CellContext`T, 
+          Blank[]]] := $CellContext`\[Sigma] 
+        Sqrt[$CellContext`T], $CellContext`D2[
+         Pattern[$CellContext`lo, 
+          Blank[]], 
+         Pattern[$CellContext`Z, 
+          Blank[]]] := $CellContext`lo/$CellContext`Z - $CellContext`Z/
+        2, $CellContext`VolFromPrice[
+         Pattern[$CellContext`S, 
+          Blank[]], 
+         Pattern[K, 
+          Blank[]], 
+         Pattern[$CellContext`T, 
+          Blank[]], 
+         Pattern[$CellContext`r, 
+          Blank[]], 
+         Pattern[$CellContext`price, 
+          Blank[]], 
+         Pattern[$CellContext`c, 
+          Blank[]], 
+         Pattern[$CellContext`fixVol, 
+          Blank[]], 
+         Pattern[$CellContext`n, 
+          Blank[]]] := 
+       Module[{$CellContext`x = 
+          Log[$CellContext`S], $CellContext`truePrice = $CellContext`price, \
+$CellContext`fixPrice, $CellContext`dpVArray, $CellContext`vol, \
+$CellContext`gk}, $CellContext`fixPrice = If[$CellContext`c == 1, 
+            $CellContext`BSCallHandy[$CellContext`S, 
+             K, $CellContext`T, $CellContext`r, $CellContext`fixVol], 
+            $CellContext`BSPutHandy[$CellContext`S, 
+             K, $CellContext`T, $CellContext`r, $CellContext`fixVol]]; \
+$CellContext`dpVArray = Table[
+            $CellContext`DpV[$CellContext`S, 
+             K, $CellContext`T, $CellContext`r, $CellContext`c, \
+$CellContext`truePrice, $CellContext`fixVol, $CellContext`j], {$CellContext`j,
+              1, $CellContext`n}]; $CellContext`gk = Function[$CellContext`k, 
+            $CellContext`DpV[$CellContext`S, 
+             K, $CellContext`T, $CellContext`r, $CellContext`c, \
+$CellContext`truePrice, $CellContext`fixVol, $CellContext`k]]; \
+$CellContext`vol = $CellContext`fixVol + 
+           Sum[($CellContext`gk[$CellContext`k]/
+              Factorial[$CellContext`k]) ($CellContext`truePrice - \
+$CellContext`fixPrice)^$CellContext`k, {$CellContext`k, 
+              1, $CellContext`n}]], $CellContext`dpVArray = {{
+         0.5849776411229176, 0.5567766825047118, 0.6276660411127543, 
+         0.6669105577226224, 0.692075562182161}, {6896.579528023015, 
+         11172.118221458015`, 13071.160073866244`, 14072.809029705233`, 
+         14701.321081286953`}, {4.226351001661501*^10, 
+         1.3965115900274634`*^11, 1.337800843635493*^11, 
+         2.2440737199918735`*^11, 2.4479702267514557`*^11}, {
+         Infinity, Indeterminate, Indeterminate, Indeterminate, 
+          Indeterminate}}, $CellContext`BSPutHandy[
+         Pattern[$CellContext`S, 
+          Blank[]], 
+         Pattern[K, 
+          Blank[]], 
+         Pattern[$CellContext`T, 
+          Blank[]], 
+         Pattern[$CellContext`r, 
+          Blank[]], 
+         Pattern[$CellContext`\[Sigma], 
+          
+          Blank[]]] := (-$CellContext`S) \
+$CellContext`NormalCDF[-$CellContext`D1[
+             $CellContext`LogForward[$CellContext`S, 
+              K, $CellContext`T, $CellContext`r], 
+             $CellContext`Std[$CellContext`\[Sigma], $CellContext`T]]] + 
+        K Exp[(-$CellContext`r) $CellContext`T] \
+$CellContext`NormalCDF[-$CellContext`D2[
+             $CellContext`LogForward[$CellContext`S, 
+              K, $CellContext`T, $CellContext`r], 
+             $CellContext`Std[$CellContext`\[Sigma], $CellContext`T]]], \
+$CellContext`DpV[
+         Pattern[$CellContext`S, 
+          Blank[]], 
+         Pattern[K, 
+          Blank[]], 
+         Pattern[$CellContext`T, 
+          Blank[]], 
+         Pattern[$CellContext`r, 
+          Blank[]], 
+         Pattern[$CellContext`c, 
+          Blank[]], 
+         Pattern[$CellContext`Price, 
+          Blank[]], 
+         Pattern[$CellContext`fixVol, 
+          Blank[]], 
+         Pattern[$CellContext`n, 
+          Blank[]]] := 
+       Module[{$CellContext`x, $CellContext`z, $CellContext`f, \
+$CellContext`fHat, $CellContext`fHatArray, $CellContext`g}, $CellContext`x = 
+          Log[$CellContext`S]; $CellContext`z = 
+          If[$CellContext`c == 
+            1, $CellContext`Price - $CellContext`BSCallHandy[$CellContext`S, 
+             K, $CellContext`T, $CellContext`r, $CellContext`fixVol], \
+$CellContext`Price - $CellContext`BSPutHandy[$CellContext`S, 
+             K, $CellContext`T, $CellContext`r, $CellContext`fixVol]]; \
+$CellContext`f := Function[$CellContext`k, 
+            $CellContext`DvP[$CellContext`x, 
+             K, $CellContext`T, $CellContext`r, $CellContext`fixVol, \
+$CellContext`c, $CellContext`k]]; $CellContext`fHat := 
+          Function[$CellContext`k, $CellContext`f[$CellContext`k + 
+              1]/(($CellContext`k + 1) $CellContext`f[
+             1])]; $CellContext`fHatArray := Function[$CellContext`k, 
+            Table[
+             $CellContext`fHat[$CellContext`j], {$CellContext`j, 
+              1, $CellContext`k}]]; $CellContext`g = 
+          Which[$CellContext`n == 0, 0, $CellContext`n == 1, 1/$CellContext`f[
+            1], $CellContext`n >= 2, (1/$CellContext`f[1]^$CellContext`n) 
+            Sum[((-1)^$CellContext`k (
+                Factorial[$CellContext`n + $CellContext`k - 1]/
+                Factorial[$CellContext`n - 1])) 
+              BellY[$CellContext`n - 1, $CellContext`k, 
+                $CellContext`fHatArray[$CellContext`n - $CellContext`k]], \
+{$CellContext`k, 1, $CellContext`n - 1}]]; $CellContext`g], $CellContext`f = 
+       InterpolatingFunction[{{1., 5.}}, {
+         5, 7, 0, {5}, {4}, 0, 0, 0, 0, Automatic, {}, {}, False}, {{1., 2., 
+         3., 4., 5.}}, {
+         Developer`PackedArrayForm, {0, 1, 2, 3, 4, 5}, {
+          0.029159291976334663`, 0.011551946919207448`, 0.015044032026171269`,
+           0.017821778783908324`, 0.01974379686797668}}, {
+         Automatic}], $CellContext`DvP[
+         Pattern[$CellContext`x, 
+          Blank[]], 
+         Pattern[K, 
+          Blank[]], 
+         Pattern[$CellContext`T, 
+          Blank[]], 
+         Pattern[$CellContext`r, 
+          Blank[]], 
+         Pattern[$CellContext`\[Sigma], 
+          Blank[]], 
+         Pattern[$CellContext`c, 
+          Blank[]], 
+         Pattern[$CellContext`n, 
+          Blank[]]] := 
+       Sum[((Factorial[$CellContext`n]/(
+           Factorial[2 $CellContext`k - $CellContext`n] 
+           Factorial[$CellContext`n - $CellContext`k])) \
+(($CellContext`T^$CellContext`k $CellContext`\[Sigma]^(
+              2 $CellContext`k - $CellContext`n))/
+           2^($CellContext`n - $CellContext`k))) 
+         Sum[(Binomial[$CellContext`k, $CellContext`j] (-1)^($CellContext`k - \
+$CellContext`j)) $CellContext`DxP[$CellContext`x, 
+             K, $CellContext`T, $CellContext`r, $CellContext`\[Sigma], \
+$CellContext`c, $CellContext`k + $CellContext`j], {$CellContext`j, 
+            0, $CellContext`k}], {$CellContext`k, 
+          1, $CellContext`n}], $CellContext`DxP[
+         Pattern[$CellContext`x, 
+          Blank[]], 
+         Pattern[K, 
+          Blank[]], 
+         Pattern[$CellContext`T, 
+          Blank[]], 
+         Pattern[$CellContext`r, 
+          Blank[]], 
+         Pattern[$CellContext`\[Sigma], 
+          Blank[]], 
+         Pattern[$CellContext`c, 
+          Blank[]], 
+         Pattern[$CellContext`n, 
+          Blank[]]] := 
+       Module[{$CellContext`d1 = $CellContext`d1x[$CellContext`x, 
+            K, $CellContext`T, $CellContext`r, $CellContext`\[Sigma]], \
+$CellContext`g}, $CellContext`g = $CellContext`c ($CellContext`d1/Sqrt[
+            2]); ($CellContext`c (Exp[$CellContext`x]/2)) (1 + 
+            Erf[$CellContext`g]) + (($CellContext`c Exp[$CellContext`x]) (1/
+             2)) Sum[(
+              Binomial[$CellContext`n - 
+                1, $CellContext`j] ((((-1)^($CellContext`j - 1) (2/Sqrt[Pi])) 
+                HermiteH[$CellContext`j - 1, $CellContext`g]) 
+               Exp[-$CellContext`g^2]))/((($CellContext`c 
+                Sqrt[2]) $CellContext`\[Sigma]) 
+              Sqrt[$CellContext`T])^$CellContext`j, {$CellContext`j, 
+              1, $CellContext`n - 1}]], $CellContext`d1[
+         Pattern[$CellContext`lo, 
+          Blank[]], 
+         Pattern[$CellContext`Z, 
+          Blank[]]] := $CellContext`lo/$CellContext`Z + $CellContext`Z/
+         2, $CellContext`d1x[
+         Pattern[$CellContext`x, 
+          Blank[]], 
+         Pattern[K, 
+          Blank[]], 
+         Pattern[$CellContext`T, 
+          Blank[]], 
+         Pattern[$CellContext`r, 
+          Blank[]], 
+         Pattern[$CellContext`\[Sigma], 
+          Blank[]]] := ($CellContext`x + $CellContext`r $CellContext`T - Log[
+         K] + ($CellContext`\[Sigma]^2 $CellContext`T)/
+          2)/($CellContext`\[Sigma] Sqrt[$CellContext`T])}; 
+     Typeset`initDone$$ = True),
+    SynchronousInitialization->True,
+    UndoTrackedVariables:>{Typeset`show$$, Typeset`bookmarkMode$$},
+    UnsavedVariables:>{Typeset`initDone$$},
+    UntrackedVariables:>{Typeset`size$$}], "Manipulate",
+   Deployed->True,
+   StripOnInput->False],
+  Manipulate`InterpretManipulate[1]]], "Output",
+ CellChangeTimes->{
+  3.7233324399891725`*^9, 3.738678014439023*^9, {3.738694230545534*^9, 
+   3.7386942510890427`*^9}, {3.7386944574366903`*^9, 
+   3.738694530656632*^9}},ExpressionUUID->"b28d95ff-4270-4ce3-a6d7-\
+ce88da5b61de"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Error Analysis", "Section",
+ CellChangeTimes->{{3.7204848012452993`*^9, 
+  3.72048480541858*^9}},ExpressionUUID->"101e019b-8706-40fe-990b-\
+e54d9cddd26f"],
+
+Cell["\<\
+There is no difference between call options and put options as Greeks w.r.t. \
+\[Sigma] are always identical. So, we only check call options and the same \
+with put options.\
+\>", "Text",
+ CellChangeTimes->{{3.720493478314803*^9, 3.720493547998766*^9}, {
+  3.738694678263485*^9, 3.7386946991632442`*^9}, {3.7386948381181*^9, 
+  3.7386948408677673`*^9}, {3.738694968448085*^9, 3.738694997891576*^9}, {
+  3.738695641237288*^9, 
+  3.738695720100552*^9}},ExpressionUUID->"71df83f8-bd3a-476e-8614-\
+60562d782c38"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"LineSpace", "[", 
+    RowBox[{"s_", ",", "f_", ",", "n_"}], "]"}], ":=", " ", 
+   RowBox[{"Range", "[", 
+    RowBox[{"s", ",", "f", ",", 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{"f", "-", "s"}], ")"}], "/", 
+      RowBox[{"(", 
+       RowBox[{"n", "-", "1"}], ")"}]}]}], "]"}]}], ";"}]], "Input",
+ CellChangeTimes->{{3.723054451898348*^9, 
+  3.7230544959980693`*^9}},ExpressionUUID->"96505189-a987-4415-a860-\
+7831f3435cf5"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"VolApprox", "[", 
+    RowBox[{
+    "fixVol_", ",", "nOrder_", ",", "S_", ",", "K_", ",", "T_", ",", "r_", 
+     ",", "\[Sigma]_", ",", "c_"}], "]"}], ":=", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"x", "=", 
+        RowBox[{"Log", "[", "S", "]"}]}], ",", "truePrice", ",", "fixPrice", 
+       ",", "dpVArray", ",", "vol", ",", "gk"}], "}"}], ",", 
+     "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"truePrice", " ", "=", " ", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{"c", "\[Equal]", "1"}], ",", 
+         RowBox[{"BSCallHandy", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "\[Sigma]"}], "]"}],
+          ",", 
+         RowBox[{"BSPutHandy", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "\[Sigma]"}], 
+          "]"}]}], "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"fixPrice", " ", "=", " ", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{"c", "\[Equal]", "1"}], ",", 
+         RowBox[{"BSCallHandy", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "fixVol"}], "]"}], 
+         ",", 
+         RowBox[{"BSPutHandy", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "fixVol"}], "]"}]}],
+         "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"dpVArray", " ", "=", " ", 
+       RowBox[{"Table", "[", 
+        RowBox[{
+         RowBox[{"DpV", "[", 
+          RowBox[{
+          "S", ",", "K", ",", "T", ",", "r", ",", "c", ",", "truePrice", ",", 
+           "fixVol", ",", "j"}], "]"}], ",", 
+         RowBox[{"{", 
+          RowBox[{"j", ",", "1", ",", "nOrder"}], "}"}]}], "]"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"gk", "=", 
+       RowBox[{"k", "\[Function]", 
+        RowBox[{"DpV", "[", 
+         RowBox[{
+         "S", ",", "K", ",", "T", ",", "r", ",", "c", ",", "truePrice", ",", 
+          "fixVol", ",", "k"}], "]"}]}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"vol", " ", "=", 
+       RowBox[{"fixVol", "+", " ", 
+        RowBox[{
+         UnderoverscriptBox["\[Sum]", 
+          RowBox[{"k", "=", "1"}], "nOrder"], 
+         RowBox[{
+          FractionBox[
+           RowBox[{"gk", "[", "k", "]"}], 
+           RowBox[{"k", "!"}]], " ", 
+          SuperscriptBox[
+           RowBox[{"(", 
+            RowBox[{"truePrice", "-", "fixPrice"}], ")"}], "k"]}]}]}]}], ";", 
+      "\[IndentingNewLine]", "vol"}]}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"LogVolError", "[", 
+    RowBox[{"fixVol_", ",", "K_", ",", "n_"}], "]"}], ":=", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"x", "=", 
+        RowBox[{"Log", "[", "100", "]"}]}], ",", 
+       RowBox[{"S", "=", "100"}], ",", 
+       RowBox[{"T", "=", "1"}], ",", 
+       RowBox[{"r", "=", "0.05"}], ",", 
+       RowBox[{"\[Sigma]", "=", "0.3"}], ",", 
+       RowBox[{"c", "=", "1"}], ",", "truePrice", ",", "fixPrice", ",", 
+       "dpVArray", ",", "vol", ",", "gk"}], "}"}], ",", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"truePrice", " ", "=", " ", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{"c", "\[Equal]", "1"}], ",", 
+         RowBox[{"BSCallHandy", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "\[Sigma]"}], "]"}],
+          ",", 
+         RowBox[{"BSPutHandy", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "\[Sigma]"}], 
+          "]"}]}], "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"fixPrice", " ", "=", " ", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{"c", "\[Equal]", "1"}], ",", 
+         RowBox[{"BSCallHandy", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "fixVol"}], "]"}], 
+         ",", 
+         RowBox[{"BSPutHandy", "[", 
+          RowBox[{"S", ",", "K", ",", "T", ",", "r", ",", "fixVol"}], "]"}]}],
+         "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"dpVArray", " ", "=", " ", 
+       RowBox[{"Table", "[", 
+        RowBox[{
+         RowBox[{"DpV", "[", 
+          RowBox[{
+          "S", ",", "K", ",", "T", ",", "r", ",", "c", ",", "truePrice", ",", 
+           "fixVol", ",", "j"}], "]"}], ",", 
+         RowBox[{"{", 
+          RowBox[{"j", ",", "1", ",", "n"}], "}"}]}], "]"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"gk", "=", 
+       RowBox[{"k", "\[Function]", 
+        RowBox[{"DpV", "[", 
+         RowBox[{
+         "S", ",", "K", ",", "T", ",", "r", ",", "c", ",", "truePrice", ",", 
+          "fixVol", ",", "k"}], "]"}]}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"vol", " ", "=", 
+       RowBox[{"fixVol", "+", " ", 
+        RowBox[{
+         UnderoverscriptBox["\[Sum]", 
+          RowBox[{"k", "=", "1"}], "n"], 
+         RowBox[{
+          FractionBox[
+           RowBox[{"gk", "[", "k", "]"}], 
+           RowBox[{"k", "!"}]], " ", 
+          SuperscriptBox[
+           RowBox[{"(", 
+            RowBox[{"truePrice", "-", "fixPrice"}], ")"}], "k"]}]}]}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"{", 
+       RowBox[{"fixVol", ",", 
+        RowBox[{"Log", "[", 
+         RowBox[{"10", ",", 
+          RowBox[{"Abs", "[", 
+           RowBox[{"vol", "-", "\[Sigma]"}], "]"}]}], "]"}]}], "}"}]}]}], 
+    "]"}]}], ";"}], "\[IndentingNewLine]"}], "Input",
+ CellChangeTimes->{{3.7204851501715665`*^9, 3.720485154498248*^9}, 
+   3.720488317100425*^9, {3.7204923192766466`*^9, 3.720492323906969*^9}, {
+   3.7204924221379585`*^9, 3.72049242551245*^9}, 3.7204928879870214`*^9, 
+   3.7204934546485615`*^9, {3.7230531408475*^9, 3.7230531820305214`*^9}, {
+   3.723057230151766*^9, 3.723057273751644*^9}, {3.7230573648122587`*^9, 
+   3.723057390244304*^9}},ExpressionUUID->"fb3a1857-0de5-47bf-9c7f-\
+050096a46150"],
+
+Cell[CellGroupData[{
+
+Cell["Tehranchi\[CloseCurlyQuote]s upper bound", "Subsection",
+ CellChangeTimes->{{3.722812421492347*^9, 3.7228124566804075`*^9}}],
+
+Cell["\<\
+The series can be expanded at any point near the true volatility. In order to \
+increase convergent rate, we use Tehranchi\[CloseCurlyQuote]s upper bound as \
+the initial guess. Note that there is no such point where all finite \
+truncations of the series are exact. However, a good initial point results in \
+a higher convergent rate, thus more accurate in the truncated series.\
+\>", "Text",
+ CellChangeTimes->{{3.7386957469453917`*^9, 3.738695853535857*^9}, {
+  3.738695888629307*^9, 3.738695903155066*^9}, {3.738695998280126*^9, 
+  3.738696166435431*^9}, {3.738696936830171*^9, 
+  3.7386969627449827`*^9}},ExpressionUUID->"5cae3749-a222-4523-90ff-\
+41c9c753f958"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"TehUpperBound", "[", 
+   RowBox[{"C_", ",", "S_", ",", "K_", ",", "T_", ",", "r_", ",", "q_"}], 
+   "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"c", ",", "k"}], "}"}], ",", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"c", "=", 
+      FractionBox["C", 
+       RowBox[{"S", " ", 
+        RowBox[{"Exp", "[", 
+         RowBox[{"q", " ", "T"}], "]"}]}]]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"k", " ", "=", " ", 
+      RowBox[{"Log", "[", 
+       FractionBox["K", 
+        RowBox[{"S", " ", 
+         RowBox[{"Exp", "[", 
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{"r", "-", "q"}], ")"}], "T"}], "]"}]}]], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"-", "2"}], " ", 
+      FractionBox[
+       RowBox[{"InverseCDF", "[", 
+        RowBox[{
+         RowBox[{"NormalDistribution", "[", 
+          RowBox[{"0", ",", "1"}], "]"}], ",", 
+         FractionBox[
+          RowBox[{"1", "-", "c"}], 
+          RowBox[{"1", "+", 
+           RowBox[{"Exp", "[", "k", "]"}]}]]}], "]"}], 
+       SqrtBox["T"]]}]}]}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.7228124710983934`*^9, 
+  3.7228126850821037`*^9}},ExpressionUUID->"51d802e6-05d3-455c-9256-\
+bf5b20cea595"],
+
+Cell[BoxData[""], "Input",
+ CellChangeTimes->{{3.723058255849657*^9, 3.72305825588525*^9}}],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"IteratedVolTeh", "[", 
+    RowBox[{
+    "nOrder_", ",", "nIter_", ",", "size_", ",", "S_", ",", "KList_", ",", 
+     "T_", ",", "r_", ",", "\[Sigma]_", ",", "c_"}], "]"}], ":=", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"priceList", ",", "fixVols"}], "}"}], ",", 
+     "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"priceList", " ", "=", " ", 
+       RowBox[{"ConstantArray", "[", 
+        RowBox[{"0", ",", "size"}], "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"fixVols", " ", "=", " ", 
+       RowBox[{"ConstantArray", "[", 
+        RowBox[{"0", ",", "size"}], "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"For", "[", 
+       RowBox[{
+        RowBox[{"i", "=", "1"}], ",", 
+        RowBox[{"i", "\[LessEqual]", "size"}], ",", 
+        RowBox[{"i", "++"}], ",", "\[IndentingNewLine]", "\t", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"priceList", "[", 
+           RowBox[{"[", "i", "]"}], "]"}], " ", "=", " ", 
+          RowBox[{"If", "[", 
+           RowBox[{
+            RowBox[{"c", "\[Equal]", "1"}], ",", 
+            RowBox[{"BSCallHandy", "[", 
+             RowBox[{"S", ",", 
+              RowBox[{"KList", "[", 
+               RowBox[{"[", "i", "]"}], "]"}], ",", "T", ",", "r", ",", 
+              "\[Sigma]"}], "]"}], ",", 
+            RowBox[{"BSPutHandy", "[", 
+             RowBox[{"S", ",", 
+              RowBox[{"KList", "[", 
+               RowBox[{"[", "i", "]"}], "]"}], ",", "T", ",", "r", ",", 
+              "\[Sigma]"}], "]"}]}], "]"}]}], ";", "\[IndentingNewLine]", 
+         "\t", 
+         RowBox[{
+          RowBox[{"fixVols", "[", 
+           RowBox[{"[", "i", "]"}], "]"}], " ", "=", " ", 
+          RowBox[{"TehUpperBound", "[", 
+           RowBox[{
+            RowBox[{"priceList", "[", 
+             RowBox[{"[", "i", "]"}], "]"}], ",", "S", ",", 
+            RowBox[{"KList", "[", 
+             RowBox[{"[", "i", "]"}], "]"}], ",", "T", ",", "r", ",", "0"}], 
+           "]"}]}], ";"}]}], "\[IndentingNewLine]", "]"}], ";", 
+      "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"For", "[", 
+       RowBox[{
+        RowBox[{"i", "=", "1"}], ",", 
+        RowBox[{"i", "<=", "size"}], ",", 
+        RowBox[{"i", "++"}], ",", "\[IndentingNewLine]", 
+        RowBox[{"For", "[", 
+         RowBox[{
+          RowBox[{"j", "=", "0"}], ",", 
+          RowBox[{"j", "<", "nIter"}], ",", 
+          RowBox[{"j", "++"}], ",", "\[IndentingNewLine]", 
+          RowBox[{
+           RowBox[{"fixVols", "[", 
+            RowBox[{"[", "i", "]"}], "]"}], " ", "=", " ", 
+           RowBox[{"VolApprox", "[", 
+            RowBox[{
+             RowBox[{"fixVols", "[", 
+              RowBox[{"[", "i", "]"}], "]"}], ",", "nOrder", ",", "S", ",", 
+             RowBox[{"KList", "[", 
+              RowBox[{"[", "i", "]"}], "]"}], ",", "T", ",", "r", ",", 
+             "\[Sigma]", ",", "c"}], "]"}]}]}], "\[IndentingNewLine]", 
+         "]"}]}], "\[IndentingNewLine]", "]"}], ";", "\[IndentingNewLine]", 
+      "fixVols"}]}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"LogErrorIteratedVolTeh", "[", 
+    RowBox[{
+    "nOrder_", ",", "nIter_", ",", "size_", ",", "S_", ",", "KList_", ",", 
+     " ", "T_", ",", "r_", ",", "\[Sigma]_", ",", "c_"}], "]"}], ":=", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"priceList", ",", "fixVols"}], "}"}], ",", 
+     "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"priceList", " ", "=", " ", 
+       RowBox[{"ConstantArray", "[", 
+        RowBox[{"0", ",", "size"}], "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"fixVols", " ", "=", " ", 
+       RowBox[{"ConstantArray", "[", 
+        RowBox[{"0", ",", "size"}], "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"For", "[", 
+       RowBox[{
+        RowBox[{"i", "=", "1"}], ",", 
+        RowBox[{"i", "\[LessEqual]", "size"}], ",", 
+        RowBox[{"i", "++"}], ",", "\[IndentingNewLine]", "\t", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"priceList", "[", 
+           RowBox[{"[", "i", "]"}], "]"}], " ", "=", " ", 
+          RowBox[{"If", "[", 
+           RowBox[{
+            RowBox[{"c", "\[Equal]", "1"}], ",", 
+            RowBox[{"BSCallHandy", "[", 
+             RowBox[{"S", ",", 
+              RowBox[{"KList", "[", 
+               RowBox[{"[", "i", "]"}], "]"}], ",", "T", ",", "r", ",", 
+              "\[Sigma]"}], "]"}], ",", 
+            RowBox[{"BSPutHandy", "[", 
+             RowBox[{"S", ",", 
+              RowBox[{"KList", "[", 
+               RowBox[{"[", "i", "]"}], "]"}], ",", "T", ",", "r", ",", 
+              "\[Sigma]"}], "]"}]}], "]"}]}], ";", "\[IndentingNewLine]", 
+         "\t", 
+         RowBox[{
+          RowBox[{"fixVols", "[", 
+           RowBox[{"[", "i", "]"}], "]"}], " ", "=", " ", 
+          RowBox[{"TehUpperBound", "[", 
+           RowBox[{
+            RowBox[{"priceList", "[", 
+             RowBox[{"[", "i", "]"}], "]"}], ",", "S", ",", 
+            RowBox[{"KList", "[", 
+             RowBox[{"[", "i", "]"}], "]"}], ",", "T", ",", "r", ",", "0"}], 
+           "]"}]}], ";"}]}], "\[IndentingNewLine]", "]"}], ";", 
+      "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"For", "[", 
+       RowBox[{
+        RowBox[{"i", "=", "1"}], ",", 
+        RowBox[{"i", "<=", "size"}], ",", 
+        RowBox[{"i", "++"}], ",", "\[IndentingNewLine]", 
+        RowBox[{"For", "[", 
+         RowBox[{
+          RowBox[{"j", "=", "0"}], ",", 
+          RowBox[{"j", "<", "nIter"}], ",", 
+          RowBox[{"j", "++"}], ",", "\[IndentingNewLine]", 
+          RowBox[{
+           RowBox[{"fixVols", "[", 
+            RowBox[{"[", "i", "]"}], "]"}], " ", "=", " ", 
+           RowBox[{"VolApprox", "[", 
+            RowBox[{
+             RowBox[{"fixVols", "[", 
+              RowBox[{"[", "i", "]"}], "]"}], ",", "nOrder", ",", "S", ",", 
+             RowBox[{"KList", "[", 
+              RowBox[{"[", "i", "]"}], "]"}], ",", "T", ",", "r", ",", 
+             "\[Sigma]", ",", "c"}], "]"}]}]}], "\[IndentingNewLine]", 
+         "]"}]}], "\[IndentingNewLine]", "]"}], ";", "\[IndentingNewLine]", 
+      RowBox[{"Log", "[", 
+       RowBox[{"10", ",", 
+        RowBox[{"Abs", "[", 
+         RowBox[{"fixVols", "-", "\[Sigma]"}], "]"}]}], "]"}]}]}], 
+    "\[IndentingNewLine]", "]"}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.7230528035633717`*^9, 3.7230528272760887`*^9}, {
+   3.7230528605395145`*^9, 3.7230529068500786`*^9}, {3.723052948148966*^9, 
+   3.7230529542307725`*^9}, {3.723052997459738*^9, 3.7230529982232294`*^9}, {
+   3.7230532498264246`*^9, 3.723053340150264*^9}, 3.723053373421216*^9, {
+   3.7230534817255335`*^9, 3.7230535048224907`*^9}, {3.7230538176529646`*^9, 
+   3.7230539962151775`*^9}, 3.7230540461341896`*^9, {3.7230542198056445`*^9, 
+   3.723054233198743*^9}, {3.7230542933717117`*^9, 3.7230543337148576`*^9}, {
+   3.723054573893654*^9, 3.723054610416854*^9}, {3.723054650334459*^9, 
+   3.7230547203914137`*^9}, {3.723054841153494*^9, 3.723054843457658*^9}, {
+   3.7230569268377037`*^9, 3.7230569676047697`*^9}, {3.723057089804994*^9, 
+   3.72305709075968*^9}, {3.723057297671988*^9, 3.7230573362417283`*^9}, {
+   3.7230574079039555`*^9, 3.723057410052266*^9}, {3.7230574522650685`*^9, 
+   3.7230574683448744`*^9}, {3.723057787429808*^9, 3.7230580284298763`*^9}, {
+   3.723058058501665*^9, 3.7230581104029737`*^9}, {3.723058194758925*^9, 
+   3.72305819523925*^9}, {3.723058301974871*^9, 3.723058392208218*^9}, {
+   3.723058510484027*^9, 3.7230585173806424`*^9}, {3.723058588765011*^9, 
+   3.723058673890938*^9}, {3.723058754336301*^9, 3.7230587639675646`*^9}, {
+   3.7230588207731953`*^9, 3.7230588334917545`*^9}, {3.7230589008542624`*^9, 
+   3.723058938721895*^9}, {3.7230593204774747`*^9, 3.723059321114473*^9}, {
+   3.723332915827376*^9, 3.72333294351405*^9}, {3.723332994428186*^9, 
+   3.723332995766748*^9}},ExpressionUUID->"8cae94cd-505c-4261-9047-\
+536ac88462dd"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Module", "[", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"S", "=", "100"}], ",", "KList", ",", 
+     RowBox[{"T", "=", "1"}], ",", 
+     RowBox[{"r", "=", "0.05"}], ",", 
+     RowBox[{"\[Sigma]", "=", "0.3"}], ",", 
+     RowBox[{"c", "=", "1"}], ",", 
+     RowBox[{"q", "=", "0"}]}], "}"}], ",", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"KList", " ", "=", " ", 
+     RowBox[{"LineSpace", "[", 
+      RowBox[{
+       RowBox[{"0.6", "*", "S"}], ",", 
+       RowBox[{"1.5", "*", "S"}], ",", "10"}], "]"}]}], ";", 
+    "\[IndentingNewLine]", 
+    RowBox[{"Table", "[", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"Timing", "[", 
+       RowBox[{"LogErrorIteratedVolTeh", "[", 
+        RowBox[{
+        "1", ",", "nIters", ",", "10", ",", "100", ",", "KList", ",", " ", 
+         "1", ",", " ", "0.05", ",", " ", "0.3", ",", " ", "1"}], "]"}], 
+       "]"}], "\[IndentingNewLine]", ",", 
+      RowBox[{"{", 
+       RowBox[{"nIters", ",", "1", ",", "6", ",", "1"}], "}"}]}], "]"}]}]}], 
+  "\[IndentingNewLine]", "]"}]], "Input",
+ CellChangeTimes->{{3.723332700361822*^9, 3.723332713955022*^9}, 
+   3.7233327830350246`*^9, {3.7233328219665947`*^9, 3.723332832117607*^9}, {
+   3.723332952433428*^9, 3.7233329547005024`*^9}, {3.723333005062484*^9, 
+   3.7233330232017536`*^9}, {3.723333089109146*^9, 3.7233330948434057`*^9}, {
+   3.7233340301192226`*^9, 3.723334034290306*^9}, {3.723334804120929*^9, 
+   3.723334804823801*^9}},ExpressionUUID->"27cf77db-d853-4b78-a002-\
+a565f222a5fa"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"0.011252`", ",", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "0.9309770825630278`"}], ",", 
+       RowBox[{"-", "1.364951625246588`"}], ",", 
+       RowBox[{"-", "2.068194913138534`"}], ",", 
+       RowBox[{"-", "3.3251013460295455`"}], ",", 
+       RowBox[{"-", "6.905607707964266`"}], ",", 
+       RowBox[{"-", "8.14309285051763`"}], ",", 
+       RowBox[{"-", "3.7241724706907107`"}], ",", 
+       RowBox[{"-", "2.597237110587317`"}], ",", 
+       RowBox[{"-", "1.9748561710406076`"}], ",", 
+       RowBox[{"-", "1.582663212768052`"}]}], "}"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"0.015362`", ",", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "1.4932276741645674`"}], ",", 
+       RowBox[{"-", "2.3975034835665077`"}], ",", 
+       RowBox[{"-", "4.036451620353231`"}], ",", 
+       RowBox[{"-", "7.0395625099161965`"}], ",", 
+       RowBox[{"-", "15.954589770191001`"}], ",", 
+       RowBox[{"-", "16.255619765854984`"}], ",", 
+       RowBox[{"-", "7.99151292405887`"}], ",", 
+       RowBox[{"-", "5.300982411778926`"}], ",", 
+       RowBox[{"-", "3.81426967713027`"}], ",", 
+       RowBox[{"-", "2.89237018715632`"}]}], "}"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"0.019923`", ",", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "2.357051155215308`"}], ",", 
+       RowBox[{"-", "4.329384901521414`"}], ",", 
+       RowBox[{"-", "7.9447775298448935`"}], ",", 
+       RowBox[{"-", "14.436075830313115`"}], ",", 
+       RowBox[{"-", "15.954589770191001`"}], ",", 
+       RowBox[{"-", "16.255619765854984`"}], ",", 
+       RowBox[{"-", "15.954589770191001`"}], ",", 
+       RowBox[{"-", "10.700171009799757`"}], ",", 
+       RowBox[{"-", "7.458143420448751`"}], ",", 
+       RowBox[{"-", "5.427186384066915`"}]}], "}"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"0.022358`", ",", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "3.9715366345152248`"}], ",", 
+       RowBox[{"-", "8.178198033196528`"}], ",", 
+       RowBox[{"-", "15.255619765854982`"}], ",", 
+       RowBox[{"-", "15.954589770191001`"}], ",", 
+       RowBox[{"-", "15.954589770191001`"}], ",", 
+       RowBox[{"-", "16.255619765854984`"}], ",", 
+       RowBox[{"-", "16.255619765854984`"}], ",", 
+       RowBox[{"-", "15.410521725840725`"}], ",", 
+       RowBox[{"-", "14.840646417884166`"}], ",", 
+       RowBox[{"-", "10.4922074970321`"}]}], "}"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"0.027944`", ",", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "7.181106996981488`"}], ",", "Indeterminate", ",", 
+       RowBox[{"-", "15.65355977452702`"}], ",", 
+       RowBox[{"-", "15.954589770191001`"}], ",", 
+       RowBox[{"-", "15.954589770191001`"}], ",", 
+       RowBox[{"-", "16.255619765854984`"}], ",", 
+       RowBox[{"-", "16.255619765854984`"}], ",", 
+       RowBox[{"-", "15.778498511135322`"}], ",", 
+       RowBox[{"-", "15.410521725840725`"}], ",", 
+       RowBox[{"-", "15.141676413548147`"}]}], "}"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"0.035473`", ",", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "13.561892816931337`"}], ",", "Indeterminate", ",", 
+       RowBox[{"-", "15.954589770191001`"}], ",", 
+       RowBox[{"-", "15.255619765854982`"}], ",", 
+       RowBox[{"-", "15.954589770191001`"}], ",", 
+       RowBox[{"-", "16.255619765854984`"}], ",", 
+       RowBox[{"-", "16.255619765854984`"}], ",", 
+       RowBox[{"-", "15.410521725840725`"}], ",", 
+       RowBox[{"-", "15.778498511135322`"}], ",", 
+       RowBox[{"-", "15.556649761518964`"}]}], "}"}]}], "}"}]}], 
+  "}"}]], "Output",
+ CellChangeTimes->{
+  3.723332844005271*^9, 3.7233329560591063`*^9, 3.7233330258428087`*^9, {
+   3.7233330898080034`*^9, 3.7233330958240404`*^9}, 3.723334035408278*^9, 
+   3.723334805395319*^9, 
+   3.7386969700221233`*^9},ExpressionUUID->"4236c457-7b3d-4ecf-827b-\
+b3fb434cb5dc"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Module", "[", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"S", "=", "100"}], ",", "KList", ",", 
+     RowBox[{"T", "=", "1"}], ",", 
+     RowBox[{"r", "=", "0.05"}], ",", 
+     RowBox[{"\[Sigma]", "=", "0.3"}], ",", 
+     RowBox[{"c", "=", "1"}], ",", 
+     RowBox[{"q", "=", "0"}]}], "}"}], ",", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"KList", " ", "=", " ", 
+     RowBox[{"LineSpace", "[", 
+      RowBox[{
+       RowBox[{"0.6", "*", "S"}], ",", 
+       RowBox[{"1.5", "*", "S"}], ",", "10"}], "]"}]}], ";", 
+    "\[IndentingNewLine]", 
+    RowBox[{"Table", "[", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"Timing", "[", 
+       RowBox[{"LogErrorIteratedVolTeh", "[", 
+        RowBox[{
+        "2", ",", "nIters", ",", "10", ",", "100", ",", "KList", ",", " ", 
+         "1", ",", " ", "0.05", ",", " ", "0.3", ",", " ", "1"}], "]"}], 
+       "]"}], "\[IndentingNewLine]", ",", 
+      RowBox[{"{", 
+       RowBox[{"nIters", ",", "1", ",", "3", ",", "1"}], "}"}]}], "]"}]}]}], 
+  "\[IndentingNewLine]", "]"}]], "Input",
+ CellChangeTimes->{{3.723333050131418*^9, 3.7233330741052504`*^9}, {
+  3.723333184664959*^9, 3.7233331848534613`*^9}, {3.7233347754666753`*^9, 
+  3.7233347757494297`*^9}},ExpressionUUID->"92186dec-924a-4f37-8eac-\
+b331ba8801e0"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"0.02145`", ",", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "1.0592966268435857`"}], ",", 
+       RowBox[{"-", "1.593430615969755`"}], ",", 
+       RowBox[{"-", "2.500450258119077`"}], ",", 
+       RowBox[{"-", "4.148896681638424`"}], ",", 
+       RowBox[{"-", "7.865475711734864`"}], ",", 
+       RowBox[{"-", "8.184580116190144`"}], ",", 
+       RowBox[{"-", "4.662230857391058`"}], ",", 
+       RowBox[{"-", "3.1962645644864374`"}], ",", 
+       RowBox[{"-", "2.3783005051407797`"}], ",", 
+       RowBox[{"-", "1.870144395203108`"}]}], "}"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"0.040592`", ",", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "2.0038983877532988`"}], ",", 
+       RowBox[{"-", "3.606923322635638`"}], ",", 
+       RowBox[{"-", "6.671646156585344`"}], ",", 
+       RowBox[{"-", "12.202771982454124`"}], ",", 
+       RowBox[{"-", "15.47746851547134`"}], ",", 
+       RowBox[{"-", "15.954589770191001`"}], ",", 
+       RowBox[{"-", "13.89200778596284`"}], ",", 
+       RowBox[{"-", "9.027106433412918`"}], ",", 
+       RowBox[{"-", "6.255294580824088`"}], ",", 
+       RowBox[{"-", "4.526766489148133`"}]}], "}"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"0.058186`", ",", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "4.296841080504088`"}], ",", 
+       RowBox[{"-", "9.471362180894683`"}], ",", 
+       RowBox[{"-", "15.954589770191001`"}], ",", 
+       RowBox[{"-", "15.556649761518964`"}], ",", 
+       RowBox[{"-", "15.778498511135322`"}], ",", 
+       RowBox[{"-", "15.954589770191001`"}], ",", 
+       RowBox[{"-", "15.778498511135322`"}], ",", 
+       RowBox[{"-", "15.556649761518964`"}], ",", 
+       RowBox[{"-", "15.255619765854982`"}], ",", 
+       RowBox[{"-", "12.407122747764618`"}]}], "}"}]}], "}"}]}], 
+  "}"}]], "Output",
+ CellChangeTimes->{{3.7233330529529533`*^9, 3.7233330748331523`*^9}, 
+   3.7233331871184855`*^9, 3.723334784655155*^9, 
+   3.73869697425871*^9},ExpressionUUID->"6d046d11-bfea-4b18-ae4a-\
+8d641d487645"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{910, 539},
+WindowMargins->{{82, Automatic}, {Automatic, 72}},
+FrontEndVersion->"11.2 for Mac OS X x86 (32-bit, 64-bit Kernel) (September \
+10, 2017)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 224, 3, 160, "Title",ExpressionUUID->"261e7a96-04a4-4062-a5f2-519090c40e1e"],
+Cell[807, 27, 199, 6, 58, "Text",ExpressionUUID->"ede4cac7-c590-4eb8-86c6-ea2d73fa0bf7"],
+Cell[CellGroupData[{
+Cell[1031, 37, 157, 3, 69, "Chapter",ExpressionUUID->"39c7f15b-1427-4f03-abdc-fa54f25cdf24"],
+Cell[1191, 42, 1288, 20, 219, "Text",ExpressionUUID->"c5b6ea1b-7b60-449d-8fbd-6f8456451ff2"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2516, 67, 166, 3, 69, "Chapter",ExpressionUUID->"e40f73b8-26ee-4c55-9489-11c6f15bdb2e"],
+Cell[CellGroupData[{
+Cell[2707, 74, 4525, 138, 386, "Input",ExpressionUUID->"4691304b-0b83-42c7-82d6-84b871a8856b"],
+Cell[7235, 214, 130, 3, 34, "Output",ExpressionUUID->"5138993d-a18a-4385-ad3b-2a5b224a8d03"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[7414, 223, 158, 3, 69, "Chapter",ExpressionUUID->"28e0ca4a-496b-4ffd-b0eb-82ac5b026091"],
+Cell[7575, 228, 2019, 44, 127, "Text",ExpressionUUID->"9c8768dc-2c54-4c11-8184-9c18c1549680"],
+Cell[9597, 274, 2300, 67, 249, "Input",ExpressionUUID->"fff3041f-78aa-4e76-9c4b-a221dfc6a74e"],
+Cell[11900, 343, 1324, 43, 85, "Input",ExpressionUUID->"e8f8f561-73a6-47cf-a5d9-b968431be503"],
+Cell[13227, 388, 3249, 84, 357, "Input",ExpressionUUID->"e9d33fa3-2a07-4a19-888f-538fc7117b76"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[16513, 477, 171, 3, 69, "Chapter",ExpressionUUID->"2633c0e4-e1e0-471e-927d-28793e5bd687"],
+Cell[16687, 482, 783, 13, 81, "Text",ExpressionUUID->"554cec86-bfdc-48d0-9d3d-c973e8586f38"],
+Cell[17473, 497, 2252, 58, 171, "Input",ExpressionUUID->"8680bf5f-2865-41ed-a3ba-914c3fa05f07"],
+Cell[CellGroupData[{
+Cell[19750, 559, 6551, 146, 893, "Input",ExpressionUUID->"5e2d6bc1-fc3d-4594-8b16-2a2a7ede6d7a"],
+Cell[26304, 707, 16242, 343, 360, "Output",ExpressionUUID->"b28d95ff-4270-4ce3-a6d7-ce88da5b61de"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[42583, 1055, 160, 3, 67, "Section",ExpressionUUID->"101e019b-8706-40fe-990b-e54d9cddd26f"],
+Cell[42746, 1060, 518, 10, 58, "Text",ExpressionUUID->"71df83f8-bd3a-476e-8614-60562d782c38"],
+Cell[43267, 1072, 480, 14, 30, "Input",ExpressionUUID->"96505189-a987-4415-a860-7831f3435cf5"],
+Cell[43750, 1088, 5769, 144, 457, "Input",ExpressionUUID->"fb3a1857-0de5-47bf-9c7f-050096a46150"],
+Cell[CellGroupData[{
+Cell[49544, 1236, 130, 1, 54, "Subsection",ExpressionUUID->"2db1f2a7-7041-49c8-96d2-5b05d2d52417"],
+Cell[49677, 1239, 677, 11, 81, "Text",ExpressionUUID->"5cae3749-a222-4523-90ff-41c9c753f958"],
+Cell[50357, 1252, 1283, 38, 178, "Input",ExpressionUUID->"51d802e6-05d3-455c-9256-bf5b20cea595"],
+Cell[51643, 1292, 91, 1, 30, "Input",ExpressionUUID->"a152dac3-e104-4a43-baa2-e740fff5ecc7"],
+Cell[51737, 1295, 7951, 174, 682, "Input",ExpressionUUID->"8cae94cd-505c-4261-9047-536ac88462dd"],
+Cell[CellGroupData[{
+Cell[59713, 1473, 1525, 35, 136, "Input",ExpressionUUID->"27cf77db-d853-4b78-a002-a565f222a5fa"],
+Cell[61241, 1510, 3914, 91, 224, "Output",ExpressionUUID->"4236c457-7b3d-4ecf-827b-b3fb434cb5dc"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[65192, 1606, 1301, 32, 136, "Input",ExpressionUUID->"92186dec-924a-4f37-8eac-b331ba8801e0"],
+Cell[66496, 1640, 2071, 49, 177, "Output",ExpressionUUID->"6d046d11-bfea-4b18-ae4a-8d641d487645"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
